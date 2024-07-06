@@ -16,24 +16,25 @@ function init() {
 	}
 
 	var plane = getPlane(25)
-	var pointLight = getPointLight(1)
+	var spotLight = getSpotLight(1)
 	var sphere = getSphere(0.05)
 	var boxGrid = getBoxGrid(10, 1.5)
 
 	plane.name = 'plane-1'
 
 	plane.rotation.x = Math.PI/2
-	pointLight.position.y = 1.5
-	pointLight.intensity = 2
+	spotLight.position.y = 2
+	spotLight.intensity = 4
 
-	gui.add(pointLight, 'intensity', 0, 10)
-	gui.add(pointLight.position, 'x', 0, 5)
-	gui.add(pointLight.position, 'y', 0, 5)
-	gui.add(pointLight.position, 'z', 0, 5)
+	gui.add(spotLight, 'intensity', 0, 20)
+	gui.add(spotLight.position, 'x', -10, 10)
+	gui.add(spotLight.position, 'y', 0, 10)
+	gui.add(spotLight.position, 'z', -10, 10)
+	gui.add(spotLight, 'penumbra', 0, 1)
 
 	scene.add(plane)
-	pointLight.add(sphere)
-	scene.add(pointLight)
+	spotLight.add(sphere)
+	scene.add(spotLight)
 	scene.add(boxGrid)
 
 
@@ -130,6 +131,17 @@ function getSphere(size) {
 function getPointLight(intensity) {
 	var light = new THREE.PointLight(0xffffff, intensity)
 	light.castShadow = true
+
+	return light
+}
+
+function getSpotLight(intensity) {
+	var light = new THREE.SpotLight(0xffffff, intensity)
+	light.castShadow = true
+
+	light.shadow.bias = 0.001
+	light.shadow.mapSize.width = 2048
+	light.shadow.mapSize.height = 2048
 
 	return light
 }
