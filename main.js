@@ -2,12 +2,11 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/Addons.js'
 import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js'
 
-
-
 function init() {
 
 	var scene = new THREE.Scene()
 	var gui = new GUI()
+	var clock = new THREE.Clock()
 
 	var enableFog = false
 
@@ -15,26 +14,22 @@ function init() {
 		scene.fog = new THREE.FogExp2(0xffffff, 0.2)
 	}
 
-	var plane = getPlane(25)
-	var spotLight = getSpotLight(1)
+	var plane = getPlane(100)
+	var directionalLight = getDirectionalLight(1)
 	var sphere = getSphere(0.05)
-	var boxGrid = getBoxGrid(10, 1.5)
+	var boxGrid = getBoxGrid(20, 2.5)
+	boxGrid.name = 'boxGrid'
 
 	plane.name = 'plane-1'
 
 	plane.rotation.x = Math.PI/2
-	spotLight.position.y = 2
-	spotLight.intensity = 4
+	directionalLight.position.y = 2
+	directionalLight.intensity = 4
 
-	gui.add(spotLight, 'intensity', 0, 20)
-	gui.add(spotLight.position, 'x', -10, 10)
-	gui.add(spotLight.position, 'y', 0, 10)
-	gui.add(spotLight.position, 'z', -10, 10)
-	gui.add(spotLight, 'penumbra', 0, 1)
 
 	scene.add(plane)
-	spotLight.add(sphere)
-	scene.add(spotLight)
+	directionalLight.add(sphere)
+	scene.add(directionalLight)
 	scene.add(boxGrid)
 
 
@@ -45,9 +40,35 @@ function init() {
 		1000
 	)
 
-	camera.position.set(15, 15, 15);
-	camera.lookAt(new THREE.Vector3(0, 0, 0));
+	var cameraZRotation = new THREE.Group()
+	var cameraYPosition = new THREE.Group()
+	var cameraZPosition = new THREE.Group()
+	var cameraXRotation = new THREE.Group()
+	var cameraYRotation = new THREE.Group()
+
+
 	
+	cameraZRotation.name = 'cameraZRotation'
+	cameraYPosition.name = 'cameraYPosition'
+	cameraZPosition.name = 'cameraZPosition'
+	cameraXRotation.name = 'cameraXRotation'
+	cameraYRotation.name = 'cameraYRotation'
+
+	cameraZRotation.add(camera)
+	cameraYPosition.add(cameraZRotation)
+	cameraZPosition.add(cameraYPosition)
+	cameraXRotation.add(cameraZPosition)
+	cameraYRotation.add(cameraXRotation)
+	scene.add(cameraYRotation)
+
+	cameraYPosition.position.y = 1
+	cameraZPosition.position.z = 100
+
+	
+	gui.add(cameraZPosition.position, 'z', 0, 100)
+	gui.add(cameraYRotation.rotation, 'y', -Math.PI, Math.PI)
+	gui.add(cameraXRotation.rotation, 'x', -Math.PI, Math.PI)
+	gui.add(cameraZRotation.rotation, 'z', -Math.PI, Math.PI)
 	
 	var renderer = new THREE.WebGLRenderer()
 	renderer.shadowMap.enabled = true
@@ -57,7 +78,7 @@ function init() {
 
 	var controls = new OrbitControls(camera, renderer.domElement)
 
-	update(renderer, scene, camera, controls)
+	update(renderer, scene, camera, controls, clock)
 
 	return scene
 
@@ -146,16 +167,48 @@ function getSpotLight(intensity) {
 	return light
 }
 
-function update(renderer, scene, camera, controls) {
+function getDirectionalLight(intensity) {
+	var light = new THREE.DirectionalLight(0xffffff, intensity)
+	light.castShadow = true
+
+	light.shadow.camera.left = -10
+	light.shadow.camera.bottom = -10
+	light.shadow.camera.right = 10
+	light.shadow.camera.top = 10
+
+	return light
+}
+
+function getAmbientLight(intensity) {
+	var light = new THREE.AmbientLight('rgb(10, 30, 50)', intensity)
+
+	return light
+}
+
+function update(renderer, scene, camera, controls, clock) {
 	renderer.render(
 		scene,
 		camera
 	)
 
+	var timeElapsed = clock.getElapsedTime()
+
+	var cameraZPosition = scene.getObjectByName('cameraZPosition')
+	cameraZPosition.position.z -= 0.25
+
+	var boxGrid = scene.getObjectByName('boxGrid')
+	boxGrid.children.forEach(function(child, index){
+		child.scale.y = (Math.sin(timeElapsed * 5 + index) + 1) / 2 +0.001;
+		child.position.y = child.scale.y/2
+	})
+
 	controls.update()
 
+
+
+
 	requestAnimationFrame(function() {
-		update(renderer, scene, camera, controls)
+		update(renderer, scene, camera, controls, clock)
 	})
 }
 
